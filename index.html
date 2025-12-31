@@ -5,24 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Buy vs Rent Calculator — AI Made Me Wealthy</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Chart.js for interactive line chart (works on GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
-  <header class="wrap">
+  <header class="wrap header">
     <div class="brand">
-      <div class="logo">AI</div>
-      <div>
+      <div class="logo" aria-hidden="true">AI</div>
+      <div class="brandText">
         <div class="title">Buy vs Rent Calculator</div>
-        <div class="subtitle">Net Worth Impact = Equity − Out-of-Pocket (numbers-only)</div>
+        <div class="subtitle">
+          Made by <a class="link" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">AIMadeMeWealthy.com</a>
+          · Net Worth Impact = Equity − Out-of-Pocket
+        </div>
       </div>
     </div>
 
+    <div class="topCta">
+      <a class="ctaLink" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">
+        Visit AIMadeMeWealthy.com →
+      </a>
+    </div>
+
     <p class="disclaimer">
-      Educational tool. Not financial advice. Assumes standard deduction (tax impacts excluded).
+      Educational tool. Not financial advice. Assumes standard deduction (tax impacts excluded for simplicity).
     </p>
   </header>
 
   <main class="wrap grid">
+    <!-- LEFT: inputs -->
     <section class="card">
       <h2>Required inputs</h2>
 
@@ -54,12 +67,12 @@
       </div>
 
       <div class="actions">
-        <button id="calcBtn">Calculate</button>
+        <button id="calcBtn" class="primary">Calculate</button>
         <button id="resetBtn" class="secondary">Reset</button>
       </div>
 
       <details class="accordion" open>
-        <summary>Optional assumptions (edit if you want)</summary>
+        <summary>Optional assumptions</summary>
 
         <div class="grid2 padtop">
           <label>
@@ -140,11 +153,12 @@
 
         <p class="note">
           PMI automatically stops once Loan-to-Value ≤ 80% (based on current home value).
-          Mortgage principal/interest is fixed; other costs inflate at the “Inflation for other costs” rate.
+          Mortgage principal/interest is fixed; other costs inflate at “Inflation for other costs”.
         </p>
       </details>
     </section>
 
+    <!-- RIGHT: results + chart + convertkit -->
     <section class="card">
       <h2>Results</h2>
 
@@ -154,7 +168,21 @@
 
       <div class="pillRow">
         <div class="pill" id="recPill">—</div>
-        <div class="pill secondary" id="diffPill">—</div>
+        <div class="pill soft" id="diffPill">—</div>
+      </div>
+
+      <div class="chartCard">
+        <div class="chartHeader">
+          <div>
+            <div class="chartTitle">Net Worth Impact over time</div>
+            <div class="chartSub">Hover to inspect each year. Breakeven shown when lines cross.</div>
+          </div>
+          <div class="breakeven" id="breakevenText">Breakeven: —</div>
+        </div>
+
+        <div class="chartWrap">
+          <canvas id="nwiChart" aria-label="Net Worth Impact chart" role="img"></canvas>
+        </div>
       </div>
 
       <div class="tableWrap">
@@ -166,10 +194,6 @@
               <th>Buy NWI</th>
               <th>Rent NWI</th>
               <th>Diff (Buy − Rent)</th>
-              <th>Buy Equity</th>
-              <th>Buy OOP</th>
-              <th>Rent Equity</th>
-              <th>Rent OOP</th>
             </tr>
           </thead>
           <tbody id="resultsBody"></tbody>
@@ -180,14 +204,32 @@
         <button id="csvBtn" class="secondary" disabled>Download CSV</button>
       </div>
 
+      <div class="divider"></div>
+
+      <div class="ckBlock">
+        <div class="ckTitle">Want the “numbers-only” version of personal finance?</div>
+        <div class="ckSub">
+          If this calculator helped, the newsletter goes deeper — one clear, tactical email per week.
+        </div>
+
+        <!-- ConvertKit embed (JS version you provided) -->
+        <div class="ckEmbed">
+          <script async data-uid="eeff810649" src="https://debtfreedoors.kit.com/eeff810649/index.js"></script>
+        </div>
+
+        <div class="ckFinePrint">
+          By subscribing, you’ll also get occasional tool updates. Unsubscribe anytime.
+        </div>
+      </div>
+
       <details class="accordion">
-        <summary>Methodology (what this tool is doing)</summary>
+        <summary>Methodology (high level)</summary>
         <div class="padtop small">
           <ul>
-            <li><b>Out-of-pocket</b> includes all monthly costs plus closing costs (buy + sell) and down payment cash outlay.</li>
-            <li><b>Equity (buy)</b> = down payment (initial equity) + total principal paid + home appreciation + invested monthly savings (if buying costs less than renting).</li>
-            <li><b>Equity (rent)</b> = invested monthly savings (if renting costs less than buying).</li>
-            <li><b>Net Worth Impact</b> = Equity − Out-of-pocket (computed each year, including year 0).</li>
+            <li><b>Out-of-pocket</b> includes monthly costs plus purchase + sale closing costs and the down payment cash outlay.</li>
+            <li><b>Equity (buy)</b> = down payment + principal paid + home appreciation + invested monthly savings if buying is cheaper.</li>
+            <li><b>Equity (rent)</b> = invested monthly savings if renting is cheaper.</li>
+            <li><b>Net Worth Impact</b> = Equity − Out-of-pocket (reported by year, including year 0).</li>
           </ul>
         </div>
       </details>
@@ -195,7 +237,7 @@
   </main>
 
   <footer class="wrap footer">
-    <span>© <span id="yearNow"></span> AI Made Me Wealthy</span>
+    <span>© <span id="yearNow"></span> <a class="link" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">AI Made Me Wealthy</a></span>
     <span class="muted">Built for GitHub Pages</span>
   </footer>
 

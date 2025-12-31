@@ -1,16 +1,12 @@
-// Buy vs Rent calculator — runs fully client-side for GitHub Pages
+// Buy vs Rent calculator — client-side for GitHub Pages
+// Adds Chart.js line chart w/ hover tooltips and breakeven detection.
 
 const $ = (id) => document.getElementById(id);
 
 const fmtMoney0 = (n) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-const fmtPct = (n) => `${(n * 100).toFixed(2)}%`;
-
-function clampNumber(x, min, max) {
-  if (!Number.isFinite(x)) return NaN;
-  return Math.min(max, Math.max(min, x));
-}
+let chartInstance = null;
 
 function parseInputs() {
   const required = {
@@ -48,48 +44,44 @@ function parseInputs() {
 
 function validate({ required, opt }) {
   const errors = [];
-
   if (!(required.homePrice > 0)) errors.push("Home price must be > 0.");
   if (!(required.monthlyRent >= 0)) errors.push("Monthly rent must be ≥ 0.");
   if (!(required.mortgageRate >= 0)) errors.push("Mortgage rate must be ≥ 0.");
   if (!(required.downPct >= 0 && required.downPct <= 1)) errors.push("Down payment % must be between 0 and 100.");
   if (!(required.years >= 1 && required.years <= 50)) errors.push("Years lived must be between 1 and 50.");
-
   if (!(opt.termYears >= 5 && opt.termYears <= 40)) errors.push("Mortgage term must be between 5 and 40 years.");
-
-  // basic sanity (not strict)
-  if (!(opt.propTaxRate >= 0 && opt.propTaxRate <= 0.2)) errors.push("Property tax rate looks invalid.");
-  if (!(opt.sellClosePct >= 0 && opt.sellClosePct <= 0.25)) errors.push("Sale closing % looks invalid.");
-
   return errors;
 }
 
-/**
- * Monthly mortgage payment for fully amortizing loan
- */
 function mortgagePayment(principal, annualRate, termMonths) {
   const r = annualRate / 12;
   if (r === 0) return principal / termMonths;
   return principal * (r * Math.pow(1 + r, termMonths)) / (Math.pow(1 + r, termMonths) - 1);
 }
 
-/**
- * Simulates month-by-month cash flows for N years, then returns year-by-year snapshots (including year 0).
- *
- * Your definition:
- *  - Out-of-pocket includes: principal, interest, taxes, insurance, PMI, closing costs, maintenance, capex, utilities
- *  - Equity includes: down payment (initial equity), principal paid, appreciation, invested savings (excess cash)
- *  - Net Worth Impact = Equity - Out-of-pocket
- */
+function snapshotRow(year, { buyOOP, rentOOP, buyEquity, rentEquity }) {
+  const buyNWI = buyEquity - buyOOP;
+  const rentNWI = rentEquity - rentOOP;
+  const diff = buyNWI - rentNWI;
+
+  let better = "TIE";
+  if (diff > 0) better = "BUY";
+  if (diff < 0) better = "RENT";
+
+  return { year, better, buyNWI, rentNWI, diff, buyEquity, buyOOP, rentEquity, rentOOP };
+}
+
 function runModel(inputs) {
-  const { required: r, opt: o } = inputs;
+  const { required: r, opt: oIn } = inputs;
+
+  // make a copy because we mutate monthly inflating utility/insurance
+  const o = JSON.parse(JSON.stringify(oIn));
 
   const months = r.years * 12;
   const termMonths = o.termYears * 12;
 
   const downPayment = r.homePrice * r.downPct;
   const loanAmount = r.homePrice - downPayment;
-
   const pmt = mortgagePayment(loanAmount, r.mortgageRate, termMonths);
 
   const monthlyHomeApp = Math.pow(1 + o.homeAppreciation, 1 / 12) - 1;
@@ -97,44 +89,34 @@ function runModel(inputs) {
   const monthlyCostInfl = Math.pow(1 + o.costInflation, 1 / 12) - 1;
   const monthlyInv = Math.pow(1 + o.investReturn, 1 / 12) - 1;
 
-  // Year-by-year output, include year 0
   const rows = [];
 
-  // Running totals
   let homeValue = r.homePrice;
   let rent = r.monthlyRent;
-
   let loanBal = loanAmount;
 
   let buyOOP = 0;
   let rentOOP = 0;
 
-  // Equity components (as YOU described)
-  let buyEquityDown = downPayment;        // initial equity
-  let buyEquityPrincipal = 0;             // principal paid over time
-  let buyEquityAppreciation = 0;          // home value change vs purchase
-  let buyInvest = 0;                      // invested excess cash if buying cheaper
+  let buyEquityDown = downPayment;
+  let buyEquityPrincipal = 0;
+  let buyInvest = 0;
+  let rentInvest = 0;
 
-  let rentInvest = 0;                     // invested excess cash if renting cheaper
-
-  // Closing costs out-of-pocket
   const buyClosing = r.homePrice * o.buyClosePct;
-  buyOOP += downPayment + buyClosing; // down payment is an out-of-pocket cash outlay by definition
-  // NOTE: Down payment is also counted in equity (buyEquityDown) so it cancels appropriately in NWI.
+  buyOOP += downPayment + buyClosing;
 
-  // Year 0 row
   rows.push(snapshotRow(0, {
-    buyOOP, rentOOP,
+    buyOOP,
+    rentOOP,
     buyEquity: buyEquityDown + buyEquityPrincipal + (homeValue - r.homePrice) + buyInvest,
     rentEquity: rentInvest,
   }));
 
   for (let m = 1; m <= months; m++) {
-    // ----- Buying monthly costs -----
-    // Interest/principal (if loan still active)
+    // Mortgage P&I
     let interest = 0;
     let principal = 0;
-
     if (loanBal > 0) {
       const rMonthly = r.mortgageRate / 12;
       interest = loanBal * rMonthly;
@@ -142,7 +124,7 @@ function runModel(inputs) {
       loanBal = Math.max(0, loanBal - principal);
     }
 
-    // PMI: if down < 20% AND LTV > 80%
+    // PMI if <20% down AND LTV > 80%
     let pmi = 0;
     if (r.downPct < 0.20) {
       const ltv = loanBal / homeValue;
@@ -151,57 +133,41 @@ function runModel(inputs) {
       }
     }
 
-    // Costs that inflate with "other costs inflation"
+    // Other buy costs (scale w/ home value)
     const propTax = (homeValue * o.propTaxRate) / 12;
     const homeIns = (homeValue * o.homeInsRate) / 12;
     const maint = (homeValue * o.maintRate) / 12;
     const capex = (homeValue * o.capexRate) / 12;
-    const utilBuy = o.utilBuy;
 
-    const buyMonthlyOOP = principal + interest + propTax + homeIns + pmi + maint + capex + utilBuy;
-
+    const buyMonthlyOOP = principal + interest + propTax + homeIns + pmi + maint + capex + o.utilBuy;
     buyOOP += buyMonthlyOOP;
-    buyEquityPrincipal += principal; // loan paydown component
+    buyEquityPrincipal += principal;
 
-    // Home appreciation
+    // Appreciation
     homeValue *= (1 + monthlyHomeApp);
-    buyEquityAppreciation = homeValue - r.homePrice;
 
-    // ----- Renting monthly costs -----
-    const rentersIns = o.rentersIns;
-    const utilRent = o.utilRent;
-
-    const rentMonthlyOOP = rent + rentersIns + utilRent;
+    // Rent costs
+    const rentMonthlyOOP = rent + o.rentersIns + o.utilRent;
     rentOOP += rentMonthlyOOP;
 
-    // Monthly inflation updates (rent + other costs)
+    // Inflate rent and “other costs”
     rent *= (1 + monthlyRentInfl);
-    // Note: homeValue already adjusted above; costs derived from homeValue auto-scale.
-    // Utilities and renters insurance inflate with "other costs inflation" to match your assumption set.
     o.utilBuy *= (1 + monthlyCostInfl);
     o.utilRent *= (1 + monthlyCostInfl);
     o.rentersIns *= (1 + monthlyCostInfl);
 
-    // ----- Invest excess cash (opportunity cost) -----
-    // If buying is cheaper this month, invest the difference in buy scenario
-    const diff = rentMonthlyOOP - buyMonthlyOOP;
-
-    // Grow both investment accounts
+    // Invest excess monthly cash (opportunity cost)
     buyInvest *= (1 + monthlyInv);
     rentInvest *= (1 + monthlyInv);
 
-    if (diff > 0) {
-      buyInvest += diff;
-    } else if (diff < 0) {
-      rentInvest += (-diff);
-    }
+    const diff = rentMonthlyOOP - buyMonthlyOOP;
+    if (diff > 0) buyInvest += diff;
+    else if (diff < 0) rentInvest += (-diff);
 
-    // End of year snapshot
+    // Year snapshots
     if (m % 12 === 0) {
       const year = m / 12;
 
-      // Sale closing costs are treated as out-of-pocket at the END of the horizon
-      // (since you listed "sale closing costs" under OOP)
       let buyOOPAdj = buyOOP;
       if (m === months) {
         const sellClosing = homeValue * o.sellClosePct;
@@ -220,29 +186,25 @@ function runModel(inputs) {
   return rows;
 }
 
-function snapshotRow(year, { buyOOP, rentOOP, buyEquity, rentEquity }) {
-  const buyNWI = buyEquity - buyOOP;
-  const rentNWI = rentEquity - rentOOP;
-  const diff = buyNWI - rentNWI;
-
-  let better = "TIE";
-  if (diff > 0) better = "BUY";
-  if (diff < 0) better = "RENT";
-
-  return {
-    year,
-    better,
-    buyNWI,
-    rentNWI,
-    diff,
-    buyEquity,
-    buyOOP,
-    rentEquity,
-    rentOOP,
-  };
+function findBreakevenYear(rows) {
+  // breakeven when diff crosses 0 between consecutive years
+  for (let i = 1; i < rows.length; i++) {
+    const prev = rows[i - 1].diff;
+    const curr = rows[i].diff;
+    if (prev === 0) return rows[i - 1].year;
+    if ((prev < 0 && curr > 0) || (prev > 0 && curr < 0)) {
+      // linear interpolate between years (i-1) and i
+      const y0 = rows[i - 1].year;
+      const y1 = rows[i].year;
+      const t = Math.abs(prev) / (Math.abs(prev) + Math.abs(curr)); // fraction from y0 to y1
+      const approx = y0 + t * (y1 - y0);
+      return approx;
+    }
+  }
+  return null;
 }
 
-function render(rows) {
+function renderTable(rows) {
   const body = $("resultsBody");
   body.innerHTML = "";
 
@@ -255,10 +217,6 @@ function render(rows) {
       fmtMoney0(r.buyNWI),
       fmtMoney0(r.rentNWI),
       fmtMoney0(r.diff),
-      fmtMoney0(r.buyEquity),
-      fmtMoney0(r.buyOOP),
-      fmtMoney0(r.rentEquity),
-      fmtMoney0(r.rentOOP),
     ];
 
     cells.forEach((c, idx) => {
@@ -273,8 +231,9 @@ function render(rows) {
 
   $("resultsTable").classList.remove("hidden");
   $("csvBtn").disabled = false;
+}
 
-  // Summary
+function renderSummary(rows) {
   const last = rows[rows.length - 1];
   const rec = last.better;
   const absDiff = Math.abs(last.diff);
@@ -285,9 +244,95 @@ function render(rows) {
   $("resultTop").classList.remove("muted");
   $("resultTop").innerHTML = `
     Over <b>${last.year} years</b>, this tool estimates <b>${rec}</b> produces the higher Net Worth Impact.
-    Net Worth Impact is calculated as <b>Equity − Out-of-pocket costs</b>.
-    “Equity” includes home appreciation and invested monthly savings (opportunity cost).
+    Net Worth Impact = <b>Equity − Out-of-pocket costs</b>.
   `;
+}
+
+function buildChart(rows) {
+  const labels = rows.map(r => r.year);
+  const buySeries = rows.map(r => Math.round(r.buyNWI));
+  const rentSeries = rows.map(r => Math.round(r.rentNWI));
+
+  const root = getComputedStyle(document.documentElement);
+  const forest = root.getPropertyValue("--forest").trim();
+  const sage = root.getPropertyValue("--sage").trim();
+  const coral = root.getPropertyValue("--coral").trim();
+  const muted = root.getPropertyValue("--muted2").trim();
+
+  const ctx = $("nwiChart").getContext("2d");
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Buy (Net Worth Impact)",
+          data: buySeries,
+          borderColor: forest,
+          backgroundColor: forest,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          tension: 0.25,
+        },
+        {
+          label: "Rent (Net Worth Impact)",
+          data: rentSeries,
+          borderColor: sage,
+          backgroundColor: sage,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          tension: 0.25,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: muted, boxWidth: 14, boxHeight: 14 }
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => `Year ${items[0].label}`,
+            label: (item) => `${item.dataset.label}: ${fmtMoney0(item.parsed.y)}`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: muted },
+          grid: { color: "rgba(82,85,78,0.12)" }
+        },
+        y: {
+          ticks: {
+            color: muted,
+            callback: (v) => fmtMoney0(v),
+          },
+          grid: { color: "rgba(82,85,78,0.12)" }
+        }
+      }
+    }
+  });
+
+  // Breakeven display
+  const be = findBreakevenYear(rows);
+  if (be == null) {
+    $("breakevenText").textContent = "Breakeven: no crossover";
+  } else {
+    const rounded = be.toFixed(1);
+    $("breakevenText").textContent = `Breakeven: ~Year ${rounded}`;
+    // subtle attention using coral sparingly (only when we have a breakeven)
+    $("breakevenText").style.borderColor = "rgba(231,84,60,0.35)";
+    $("breakevenText").style.background = "rgba(231,84,60,0.08)";
+    $("breakevenText").style.color = coral;
+  }
 }
 
 function rowsToCSV(rows) {
@@ -345,13 +390,9 @@ function resetAll() {
     "propTaxRate","homeInsRate","pmiRate","buyClosePct","sellClosePct",
     "maintRate","capexRate","utilBuy","utilRent","rentersIns"
   ];
-  ids.forEach(id => {
-    const el = $(id);
-    if (!el) return;
-    el.value = "";
-  });
+  ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
 
-  // Restore optional defaults
+  // restore optional defaults
   $("termYears").value = 30;
   $("homeAppreciation").value = 3.0;
   $("rentInflation").value = 3.0;
@@ -373,8 +414,16 @@ function resetAll() {
   $("csvBtn").disabled = true;
   $("recPill").textContent = "—";
   $("diffPill").textContent = "—";
+  $("breakevenText").textContent = "Breakeven: —";
+  $("breakevenText").removeAttribute("style");
+
   $("resultTop").classList.add("muted");
   $("resultTop").textContent = "Enter inputs and click Calculate.";
+
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
 }
 
 function main() {
@@ -395,7 +444,10 @@ function main() {
     }
 
     const rows = runModel(inputs);
-    render(rows);
+
+    renderSummary(rows);
+    renderTable(rows);
+    buildChart(rows);
 
     $("csvBtn").onclick = () => {
       const csv = rowsToCSV(rows);
