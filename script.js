@@ -1,5 +1,5 @@
 // Buy vs Rent calculator — client-side for GitHub Pages
-// Adds Chart.js line chart w/ hover tooltips and breakeven detection.
+// Keeps curved chart styling, but now detects and displays ALL breakevens.
 
 const $ = (id) => document.getElementById(id);
 
@@ -74,7 +74,7 @@ function snapshotRow(year, { buyOOP, rentOOP, buyEquity, rentEquity }) {
 function runModel(inputs) {
   const { required: r, opt: oIn } = inputs;
 
-  // make a copy because we mutate monthly inflating utility/insurance
+  // Make a copy because we mutate monthly inflating utility/insurance
   const o = JSON.parse(JSON.stringify(oIn));
 
   const months = r.years * 12;
@@ -168,6 +168,7 @@ function runModel(inputs) {
     if (m % 12 === 0) {
       const year = m / 12;
 
+      // Sale closing costs only at the end of horizon (since you only sell at that point)
       let buyOOPAdj = buyOOP;
       if (m === months) {
         const sellClosing = homeValue * o.sellClosePct;
@@ -186,22 +187,23 @@ function runModel(inputs) {
   return rows;
 }
 
-function findBreakevenYear(rows) {
-  // breakeven when diff crosses 0 between consecutive years
+// Detect ALL breakeven points (diff crosses 0 between consecutive years)
+function findBreakevens(rows) {
+  const points = [];
   for (let i = 1; i < rows.length; i++) {
     const prev = rows[i - 1].diff;
     const curr = rows[i].diff;
-    if (prev === 0) return rows[i - 1].year;
+
+    if (prev === 0) points.push(rows[i - 1].year);
+
     if ((prev < 0 && curr > 0) || (prev > 0 && curr < 0)) {
-      // linear interpolate between years (i-1) and i
       const y0 = rows[i - 1].year;
       const y1 = rows[i].year;
-      const t = Math.abs(prev) / (Math.abs(prev) + Math.abs(curr)); // fraction from y0 to y1
-      const approx = y0 + t * (y1 - y0);
-      return approx;
+      const t = Math.abs(prev) / (Math.abs(prev) + Math.abs(curr)); // linear interpolation
+      points.push(y0 + t * (y1 - y0));
     }
   }
-  return null;
+  return points;
 }
 
 function renderTable(rows) {
@@ -260,7 +262,6 @@ function buildChart(rows) {
   const muted = root.getPropertyValue("--muted2").trim();
 
   const ctx = $("nwiChart").getContext("2d");
-
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
@@ -276,7 +277,7 @@ function buildChart(rows) {
           borderWidth: 3,
           pointRadius: 0,
           pointHoverRadius: 5,
-          tension: 0.25,
+          tension: 0.25, // KEEP curved design per your request
         },
         {
           label: "Rent (Net Worth Impact)",
@@ -286,7 +287,7 @@ function buildChart(rows) {
           borderWidth: 3,
           pointRadius: 0,
           pointHoverRadius: 5,
-          tension: 0.25,
+          tension: 0.25, // KEEP curved design per your request
         },
       ],
     },
@@ -321,18 +322,22 @@ function buildChart(rows) {
     }
   });
 
-  // Breakeven display
-  const be = findBreakevenYear(rows);
-  if (be == null) {
+  // Breakeven display (ALL crossovers)
+  const bes = findBreakevens(rows);
+
+  if (!bes.length) {
     $("breakevenText").textContent = "Breakeven: no crossover";
-  } else {
-    const rounded = be.toFixed(1);
-    $("breakevenText").textContent = `Breakeven: ~Year ${rounded}`;
-    // subtle attention using coral sparingly (only when we have a breakeven)
-    $("breakevenText").style.borderColor = "rgba(231,84,60,0.35)";
-    $("breakevenText").style.background = "rgba(231,84,60,0.08)";
-    $("breakevenText").style.color = coral;
+    $("breakevenText").removeAttribute("style");
+    return;
   }
+
+  $("breakevenText").textContent =
+    `Breakeven: ${bes.map(x => `~Year ${x.toFixed(1)}`).join(", ")}`;
+
+  // Use coral sparingly: only highlight when breakevens exist
+  $("breakevenText").style.borderColor = "rgba(231,84,60,0.35)";
+  $("breakevenText").style.background = "rgba(231,84,60,0.08)";
+  $("breakevenText").style.color = coral;
 }
 
 function rowsToCSV(rows) {

@@ -13,7 +13,6 @@
 <body>
   <header class="wrap header">
     <div class="brand">
-      <div class="logo" aria-hidden="true">AI</div>
       <div class="brandText">
         <div class="title">Buy vs Rent Calculator</div>
         <div class="subtitle">
@@ -21,12 +20,12 @@
           · Net Worth Impact = Equity − Out-of-Pocket
         </div>
       </div>
-    </div>
 
-    <div class="topCta">
-      <a class="ctaLink" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">
-        Visit AIMadeMeWealthy.com →
-      </a>
+      <div class="topCta">
+        <a class="ctaLink" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">
+          Visit AIMadeMeWealthy.com →
+        </a>
+      </div>
     </div>
 
     <p class="disclaimer">
@@ -35,130 +34,152 @@
   </header>
 
   <main class="wrap grid">
-    <!-- LEFT: inputs -->
-    <section class="card">
-      <h2>Required inputs</h2>
+    <!-- LEFT COLUMN -->
+    <div class="col">
+      <!-- Required inputs -->
+      <section class="card">
+        <h2>Required inputs</h2>
 
-      <div class="grid2">
-        <label>
-          Home price
-          <input id="homePrice" type="number" min="0" step="1000" placeholder="450000" />
-        </label>
-
-        <label>
-          Monthly rent (comparable home)
-          <input id="monthlyRent" type="number" min="0" step="50" placeholder="2600" />
-        </label>
-
-        <label>
-          Mortgage rate (APR %)
-          <input id="mortgageRate" type="number" min="0" step="0.01" placeholder="6.75" />
-        </label>
-
-        <label>
-          Down payment (%)
-          <input id="downPct" type="number" min="0" max="100" step="0.1" placeholder="10" />
-        </label>
-
-        <label>
-          Years lived in home
-          <input id="years" type="number" min="1" max="50" step="1" placeholder="10" />
-        </label>
-      </div>
-
-      <div class="actions">
-        <button id="calcBtn" class="primary">Calculate</button>
-        <button id="resetBtn" class="secondary">Reset</button>
-      </div>
-
-      <details class="accordion" open>
-        <summary>Optional assumptions</summary>
-
-        <div class="grid2 padtop">
+        <div class="grid2">
           <label>
-            Mortgage term (years)
-            <input id="termYears" type="number" min="5" max="40" step="1" value="30" />
+            Home price
+            <input id="homePrice" type="number" min="0" step="1000" placeholder="450000" />
           </label>
 
           <label>
-            Home value appreciation (% / yr)
-            <input id="homeAppreciation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            Monthly rent (comparable home)
+            <input id="monthlyRent" type="number" min="0" step="50" placeholder="2600" />
           </label>
 
           <label>
-            Rent inflation (% / yr)
-            <input id="rentInflation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            Mortgage rate (APR %)
+            <input id="mortgageRate" type="number" min="0" step="0.01" placeholder="6.75" />
           </label>
 
           <label>
-            Inflation for other costs (% / yr)
-            <input id="costInflation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            Down payment (%)
+            <input id="downPct" type="number" min="0" max="100" step="0.1" placeholder="10" />
           </label>
 
           <label>
-            Return on reinvested cash (% / yr)
-            <input id="investReturn" type="number" min="-50" max="50" step="0.1" value="7.0" />
-          </label>
-
-          <label>
-            Property tax rate (% of home value / yr)
-            <input id="propTaxRate" type="number" min="0" max="10" step="0.01" value="1.10" />
-          </label>
-
-          <label>
-            Home insurance (% of home value / yr)
-            <input id="homeInsRate" type="number" min="0" max="10" step="0.01" value="0.35" />
-          </label>
-
-          <label>
-            PMI rate (% of original loan / yr) if &lt;20% down
-            <input id="pmiRate" type="number" min="0" max="5" step="0.01" value="0.70" />
-          </label>
-
-          <label>
-            Purchase closing costs (% of home price)
-            <input id="buyClosePct" type="number" min="0" max="10" step="0.1" value="3.0" />
-          </label>
-
-          <label>
-            Sale closing costs (% of sale price)
-            <input id="sellClosePct" type="number" min="0" max="15" step="0.1" value="6.0" />
-          </label>
-
-          <label>
-            Repairs & maintenance (% of home value / yr)
-            <input id="maintRate" type="number" min="0" max="10" step="0.01" value="1.00" />
-          </label>
-
-          <label>
-            Capital expenditures (% of home value / yr)
-            <input id="capexRate" type="number" min="0" max="10" step="0.01" value="0.50" />
-          </label>
-
-          <label>
-            Monthly utilities (buy)
-            <input id="utilBuy" type="number" min="0" step="10" value="250" />
-          </label>
-
-          <label>
-            Monthly utilities (rent)
-            <input id="utilRent" type="number" min="0" step="10" value="250" />
-          </label>
-
-          <label>
-            Renter’s insurance (monthly)
-            <input id="rentersIns" type="number" min="0" step="1" value="15" />
+            Years lived in home
+            <input id="years" type="number" min="1" max="50" step="1" placeholder="10" />
           </label>
         </div>
 
-        <p class="note">
-          PMI automatically stops once Loan-to-Value ≤ 80% (based on current home value).
-          Mortgage principal/interest is fixed; other costs inflate at “Inflation for other costs”.
-        </p>
-      </details>
-    </section>
+        <div class="actions">
+          <button id="calcBtn" class="primary">Calculate</button>
+          <button id="resetBtn" class="secondary">Reset</button>
+        </div>
 
-    <!-- RIGHT: results + chart + convertkit -->
+        <details class="accordion" open>
+          <summary>Optional assumptions</summary>
+
+          <div class="grid2 padtop">
+            <label>
+              Mortgage term (years)
+              <input id="termYears" type="number" min="5" max="40" step="1" value="30" />
+            </label>
+
+            <label>
+              Home value appreciation (% / yr)
+              <input id="homeAppreciation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            </label>
+
+            <label>
+              Rent inflation (% / yr)
+              <input id="rentInflation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            </label>
+
+            <label>
+              Inflation for other costs (% / yr)
+              <input id="costInflation" type="number" min="-20" max="50" step="0.1" value="3.0" />
+            </label>
+
+            <label>
+              Return on reinvested cash (% / yr)
+              <input id="investReturn" type="number" min="-50" max="50" step="0.1" value="7.0" />
+            </label>
+
+            <label>
+              Property tax rate (% of home value / yr)
+              <input id="propTaxRate" type="number" min="0" max="10" step="0.01" value="1.10" />
+            </label>
+
+            <label>
+              Home insurance (% of home value / yr)
+              <input id="homeInsRate" type="number" min="0" max="10" step="0.01" value="0.35" />
+            </label>
+
+            <label>
+              PMI rate (% of original loan / yr) if &lt;20% down
+              <input id="pmiRate" type="number" min="0" max="5" step="0.01" value="0.70" />
+            </label>
+
+            <label>
+              Purchase closing costs (% of home price)
+              <input id="buyClosePct" type="number" min="0" max="10" step="0.1" value="3.0" />
+            </label>
+
+            <label>
+              Sale closing costs (% of sale price)
+              <input id="sellClosePct" type="number" min="0" max="15" step="0.1" value="6.0" />
+            </label>
+
+            <label>
+              Repairs & maintenance (% of home value / yr)
+              <input id="maintRate" type="number" min="0" max="10" step="0.01" value="1.00" />
+            </label>
+
+            <label>
+              Capital expenditures (% of home value / yr)
+              <input id="capexRate" type="number" min="0" max="10" step="0.01" value="0.50" />
+            </label>
+
+            <label>
+              Monthly utilities (buy)
+              <input id="utilBuy" type="number" min="0" step="10" value="250" />
+            </label>
+
+            <label>
+              Monthly utilities (rent)
+              <input id="utilRent" type="number" min="0" step="10" value="250" />
+            </label>
+
+            <label>
+              Renter’s insurance (monthly)
+              <input id="rentersIns" type="number" min="0" step="1" value="15" />
+            </label>
+          </div>
+
+          <p class="note">
+            PMI automatically stops once Loan-to-Value ≤ 80% (based on current home value).
+            Mortgage principal/interest is fixed; other costs inflate at “Inflation for other costs”.
+          </p>
+        </details>
+      </section>
+
+      <!-- ConvertKit form (new left-side bubble) -->
+      <section class="card">
+        <div class="ckBlock">
+          <div class="ckTitle">Want the “AI-native” version of personal finance?</div>
+          <div class="ckSub">
+            If this calculator helped, the newsletter goes deeper — one clear, tactical email per week.
+          </div>
+
+          <!-- ConvertKit embed (JS version you provided) -->
+          <div class="ckEmbed">
+            <script async data-uid="eeff810649" src="https://debtfreedoors.kit.com/eeff810649/index.js"></script>
+          </div>
+
+          <div class="ckFinePrint">
+            By subscribing, you’ll also get occasional tool updates. Unsubscribe anytime.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN -->
     <section class="card">
       <h2>Results</h2>
 
@@ -204,24 +225,6 @@
         <button id="csvBtn" class="secondary" disabled>Download CSV</button>
       </div>
 
-      <div class="divider"></div>
-
-      <div class="ckBlock">
-        <div class="ckTitle">Want the “numbers-only” version of personal finance?</div>
-        <div class="ckSub">
-          If this calculator helped, the newsletter goes deeper — one clear, tactical email per week.
-        </div>
-
-        <!-- ConvertKit embed (JS version you provided) -->
-        <div class="ckEmbed">
-          <script async data-uid="eeff810649" src="https://debtfreedoors.kit.com/eeff810649/index.js"></script>
-        </div>
-
-        <div class="ckFinePrint">
-          By subscribing, you’ll also get occasional tool updates. Unsubscribe anytime.
-        </div>
-      </div>
-
       <details class="accordion">
         <summary>Methodology (high level)</summary>
         <div class="padtop small">
@@ -238,7 +241,6 @@
 
   <footer class="wrap footer">
     <span>© <span id="yearNow"></span> <a class="link" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">AI Made Me Wealthy</a></span>
-    <span class="muted">Built for GitHub Pages</span>
   </footer>
 
   <script src="script.js"></script>

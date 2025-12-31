@@ -33,9 +33,8 @@ body{
 
 .wrap{ max-width:1150px; margin:0 auto; padding:24px; }
 
-.header{
-  padding-bottom:8px;
-}
+.header{ padding-bottom:8px; }
+
 .brand{
   display:flex;
   gap:14px;
@@ -43,25 +42,20 @@ body{
   justify-content:space-between;
   flex-wrap:wrap;
 }
+
 .brandText{ display:flex; flex-direction:column; gap:4px; }
-.logo{
-  width:44px; height:44px;
-  display:grid; place-items:center;
-  border-radius:14px;
-  background: rgba(46,86,56,0.10);
-  border:1px solid var(--border);
-  font-weight:900;
-  letter-spacing:0.5px;
-  color: var(--forest);
-}
 
 .title{ font-size:22px; font-weight:900; }
 .subtitle{ color:var(--muted); font-size:13px; }
-.disclaimer{ color:var(--muted2); margin:12px 0 0; font-size:12.5px; }
 
-.topCta{
-  margin-left:auto;
+.disclaimer{
+  color:var(--muted2);
+  margin:12px 0 0;
+  font-size:12.5px;
 }
+
+.topCta{ margin-left:auto; }
+
 .ctaLink{
   display:inline-flex;
   align-items:center;
@@ -201,6 +195,7 @@ summary{ cursor:pointer; color:var(--text); font-weight:900; }
 }
 .chartTitle{ font-weight:900; font-size:13px; }
 .chartSub{ font-size:12px; color: var(--muted2); margin-top:2px; }
+
 .breakeven{
   font-weight:900;
   font-size:12px;
@@ -211,9 +206,8 @@ summary{ cursor:pointer; color:var(--text); font-weight:900; }
   border-radius:999px;
   align-self:flex-start;
 }
-.chartWrap{
-  height: 260px;
-}
+
+.chartWrap{ height: 260px; }
 canvas{ width:100% !important; height:100% !important; }
 
 .tableWrap{
