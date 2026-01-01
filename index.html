@@ -6,6 +6,15 @@
   <title>Buy vs Rent Calculator — AI Made Me Wealthy</title>
   <link rel="stylesheet" href="styles.css" />
 
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3R1KF7GYGF"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-3R1KF7GYGF');
+  </script>
+
   <!-- Chart.js for interactive line chart (works on GitHub Pages) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -72,7 +81,8 @@
           <button id="resetBtn" class="secondary">Reset</button>
         </div>
 
-        <details class="accordion" open>
+        <!-- Collapsed by default: removed "open" -->
+        <details class="accordion">
           <summary>Optional assumptions</summary>
 
           <div class="grid2 padtop">
@@ -159,7 +169,7 @@
         </details>
       </section>
 
-      <!-- ConvertKit form (new left-side bubble) -->
+      <!-- ConvertKit form bubble -->
       <section class="card">
         <div class="ckBlock">
           <div class="ckTitle">Want the “AI-native” version of personal finance?</div>
@@ -167,7 +177,6 @@
             If this calculator helped, the newsletter goes deeper — one clear, tactical email per week.
           </div>
 
-          <!-- ConvertKit embed (JS version you provided) -->
           <div class="ckEmbed">
             <script async data-uid="eeff810649" src="https://debtfreedoors.kit.com/eeff810649/index.js"></script>
           </div>
@@ -225,6 +234,7 @@
         <button id="csvBtn" class="secondary" disabled>Download CSV</button>
       </div>
 
+      <!-- Methodology already collapsed by default (no "open") -->
       <details class="accordion">
         <summary>Methodology (high level)</summary>
         <div class="padtop small">
@@ -241,6 +251,7 @@
 
   <footer class="wrap footer">
     <span>© <span id="yearNow"></span> <a class="link" href="https://AIMadeMeWealthy.com" target="_blank" rel="noopener">AI Made Me Wealthy</a></span>
+    <span class="muted">Built for GitHub Pages</span>
   </footer>
 
   <script src="script.js"></script>
